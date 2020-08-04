@@ -8,7 +8,7 @@ const long timeoutTime = 2000;
 String header;// Variable to store the HTTP request //used_by:clent_refresh
 
 //wifi/request()
-String server_key = "3f82bff4c736d594b2f74e99939c015ff5d44a1e32679b0d33479b0984d5f83577d61c958a6703bcbcec3f706d6e3c17bac11e688a118cac6b54c2030e8ed6bc";
+String server_key = "nithin";//3f82bff4c736d594b2f74e99939c015ff5d44a1e32679b0d33479b0984d5f83577d61c958a6703bcbcec3f706d6e3c17bac11e688a118cac6b54c2030e8ed6bc";
 
 
 /*
@@ -140,7 +140,7 @@ void service(WiFiClient client){
                     client_print(client,json,SERVICE_TURN,"{\"error\":\"Parameters are not as expected\"}");//i.e req,user,cash_bytes,json(optional)
                   }else{*/
                     //Serial.println("Accepted ");
-                    client_print(client,json,SERVICE_TURN,String("{\"req\":")+req+",\"user\":"+user+",\"has_dispensed_for\":"+dispense_water(req,user,cash)+"}");
+                    client_print(client,json,SERVICE_TURN,String("{\"req\":")+req+",\"user\":"+user+",\"has_dispensed_for\":"+dispense_water(req,user)+"}");//,cash
 /*                  client.print("{\"req\":");
                   client.print(req);
                   client.print(",\"user\":");

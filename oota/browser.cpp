@@ -9,6 +9,7 @@ void post(String address){
    
 }
 */
+// used_by:stop_dispense(int user,unsigned long count)
 // uses : wifi/my_ip()
 String browse_with_ip_id_password(String address){//send_sensor_value_to
     String ip = my_ip();
@@ -30,7 +31,7 @@ String browse_with_ip_id_password(String address){//send_sensor_value_to
     STDOUT.println("HTTP END");
 }
 void send_sensor_value(int count,long at){//maybe optimized by sending huge data at a time.
-  http.begin(SERVER_ADDRESS+"/api/store.php?value="+String(count)+"&at="+at+"&user="+dispensing_for+"&password=nithinPk&id="+DEVICE_ID);
+  http.begin(SERVER_ADDRESS+"/sensor_value/?value="+String(count)+"&at="+at+"&user="+dispensing_for+"&server_key=nithin&id="+DEVICE_ID);//"/api/store.php?value="+String(count)+"&at="+at+"&user="+dispensing_for+"&password=nithinPk&id="+DEVICE_ID);
   while(http.GET() != 200){
     delay(1000);
   }

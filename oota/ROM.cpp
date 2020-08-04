@@ -1,15 +1,16 @@
 #include "ROM.h"
-/*
- * EEPROM 
- * 0 - 127 server_key(128)
- * 128 - 143 password(16)
- * 144 - 159 ssid(16)
- * 160 - 163 counter(4) unsigned long
- * 167 - 168 user(2) unsigned short (0 - 65535] 0 - none //165,6 are reserved for user but not used
- * 169 - 170 cpml(2)
- * 
- * 200 - 1224 cash_bytes
- */
+ /*
+  * cash_bytes (actually can't bcz attacker can get all the cash along with key) help when attacker gets key and don't use it.
+  * Server gives same key to user. 
+  * After user starts transaction, if only product_key is used to authenticate, 
+  * attacker can finish the transaction.
+  * 
+  * 
+  * 
+  */
+#define MAX_MISMATCH 5
+unsigned int mismatch_count = 0;
+
 void store_count_per_ml(int cpml){
   EEPROM.begin(256);
   EEPROM.write(169,(cpml%(256*256))/256);
@@ -20,6 +21,14 @@ void store_count_per_ml(int cpml){
 int count_per_ml_fetch(){
   EEPROM.begin(256);
   return EEPROM.read(169)*256 + EEPROM.read(170);
+}
+
+void store_product_key(String key){
+  EEPROM.begin(384);
+  for(int i=256; i<384; i++){
+    EEPROM.write(i,key[i]);
+  }
+  EEPROM.commit();
 }
 void store_int(int addr,unsigned int count){
     //int b[4];
@@ -99,7 +108,7 @@ String fetch(int from,int to){
   //Serial.println(s);
   return s;
 }
-void store(int from,String data){
+void store(int from,String data,bool end_char){
   EEPROM.begin(1224);
   //int to = from+data.length();
   int ind;
@@ -107,27 +116,41 @@ void store(int from,String data){
     EEPROM.write(from+ind,data[ind]);
     //STDOUT.print(data[ind]);
   }
-  EEPROM.write(ind,'\0');
+  if(end_char){
+    EEPROM.write(ind,'\0');
+  }
   EEPROM.end();
-  STDOUT.println("commited");
 }
 bool cash_match(String cash){
-  String my_cash = fetch(200,1224);
+  String my_cash = fetch(384,649);//1224
   Serial.println(cash.length());
   Serial.println(cash);
   for(int i = 0; i<cash.length(); i++){
     if(my_cash[i] != cash[i]){
       STDERR.print("\nCash mismatch @ ");
       STDERR.print(my_cash[i]);
+      mismatch_count++;
+      if(mismatch_count == MAX_MISMATCH){// required only if cash is stored inconsistently
+          String s = browse_with_ip_id_password(SERVER_ADDRESS+"cash_recover/?cash="+cash);
+          mismatch_count = 0;
+          if(s.length() > 0){
+              store(384,s,false);
+              Serial.print(fetch(384,649));//1224
+              Serial.print(s);
+              return true;
+          }
+      }
       return false;
     }
   }
-  
   //renew_cash(browse_with_ip_id_password(SERVER_ADDRESS+"/api/cash?cash="+cash));
-  String s = browse_with_ip_id_password(SERVER_ADDRESS+"/api/cash.php?cash="+cash);
-  store(200,s);
-  Serial.print(fetch(200,1224));
-  Serial.print(s);
+  String s = browse_with_ip_id_password(SERVER_ADDRESS+"cash/?cash="+cash);
+  store(384,s,false);
+//  if(mismatch_count == MAX_MISMATCH){
+//    mismatch_count = 0;
+//    return false;
+//  }
+//  mismatch_count = 0;
   return true;
 }
 int rom_store(String api_key,String password , String ssid){

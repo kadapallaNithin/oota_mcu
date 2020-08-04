@@ -20,7 +20,8 @@ extern const byte output2;// = 2;
 extern const byte sensor;// = 4;
 
 extern int count_per_ml;// = 400;
-int dispense_water(int,int,String);
+//int dispense_water(int,int,String);
+int dispense_water(int,int);
 void stop_dispense(int,unsigned long);
 unsigned long stop_dispense();
 int stop_dispense(int);

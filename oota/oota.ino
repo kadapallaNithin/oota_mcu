@@ -23,7 +23,7 @@ void setup() {
   count_per_ml = count_per_ml_fetch();
   //server_key = 
   STDLOG.print(count_per_ml);
-  request();
+  request(1);
   server.begin();
   //store(200,"nithinkumarkadapallanithinkumarkadapallannnnnnnnnnn");
   //String s = fetch(200,1224);

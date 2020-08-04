@@ -1,8 +1,7 @@
 #include "wifi.h"// for server_key
-#include "ROM.h" // for KEYLEN, rom_store
+#include "ROM.h" // for KEYLEN_not_using, rom_store
 #include "browser.h" // for SEVER_ADDRESS, http in request, IpAddress2String() in WiFiConnect(),my_ip()
 #include "main.h"  // for DEVICE_ID in request
-//const byte PRODUCT_ID = 1;
 //String api_key;//required only for request
 //used_by : wifi/request()
 String ssid  = "kadapalla";//"NITAP-Boys Hostel";////"NITAP-Hostels";//"AndroidAP";//"Sathy@";//
@@ -18,7 +17,7 @@ String IpAddress2String(const IPAddress& ipAddress)
 }
 
 // used by : wifi/request()
-//uses : IpAddress2String()
+//uses : IpAddress2String(), ssid, password
 String WiFiConnect(){
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -39,7 +38,7 @@ String WiFiConnect(){
 
 // used by : ensure_connect(), my_ip(), setup()
 // uses WiFiConnect(), SERVER_ADDRESS, DEVICE_ID, http, KEYLEN, ssid, password, server_key, rom_store
-String request(){
+String request(int is_reset){
   String ip ;
 //  if(WiFi.status() != WL_CONNECTED){// removed this bcz without assigning ip, get params in address would be wrong
     ip = WiFiConnect();
@@ -47,7 +46,10 @@ String request(){
 //  }
     // http is global variable
     //ip = "192.168.43.24";
-    String address = SERVER_ADDRESS+"api/index.php?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;//"product_ip/?key="+"nithinPk"+"&ip="+ip+"&prod="+DEVICE_ID;//"api/index.php?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;//"request/?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;//"http://skin-lime.000webhostapp.com/api/index.php?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;
+    String address = SERVER_ADDRESS+"product_ip/?key="+"nithinPk"+"&ip="+ip+"&prod="+DEVICE_ID;//"product_ip/?key="+"nithinPk"+"&ip="+ip+"&prod="+DEVICE_ID;//"api/index.php?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;//"request/?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;//"http://skin-lime.000webhostapp.com/api/index.php?password=nithinPk&ip="+ip+"&my_ip="+ip+"&prod="+DEVICE_ID;
+    if(is_reset){
+      address += "&is_reset=1";
+    }
     http.begin(address);//Specify request destination
     Serial.println("Getting from "+address);
     int httpCode = http.GET();
@@ -65,7 +67,64 @@ String request(){
       String payload = http.getString();   //Get the request response payload
       Serial.println(payload);                    //Print the response payload
       Serial.println();
-      int k = payload.indexOf("\"key\"");
+      int return_error = 0;
+      StaticJsonDocument<250> doc;
+      DeserializationError error = deserializeJson(doc, payload);
+      String key;
+      if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.c_str());
+        return_error += 8;
+      }else{
+        key = doc["server_key"].as<String>();
+        ssid = doc["ssid"].as<String>();
+        password = doc["password"].as<String>();
+        if(key == "null"){
+          return_error++;
+        }
+        if(ssid == "null"){
+          return_error += 2;
+        }
+        if(password == "null"){
+          return_error += 4;
+        }
+      }
+      if(return_error == 0){
+        server_key = get_server_key();
+        rom_store(key,password,ssid);
+      }else{
+        Serial.print("WiFiConnection error code : ");
+        Serial.println(return_error);
+        //report error
+      }
+
+    }else{
+      Serial.println("Unexpected");
+    }
+    http.end();   //Close connection
+    Serial.println("HTTP END");
+    return ip;
+}
+// used_by: browser/post, loop()
+void ensure_connect(){
+ if(WiFi.status() !=  WL_CONNECTED){
+  request(0);
+ }
+}
+
+//used_by : browser/
+String my_ip(){
+  if(WiFi.status() != WL_CONNECTED){
+      return request(0);
+  }else{
+    return IpAddress2String(WiFi.localIP());
+  }
+}
+
+
+/*
+ * 
+ *       /*int k = payload.indexOf("\"key\"");
       int p = payload.indexOf("\"password\"");
       int s = payload.indexOf("\"ssid\"");
       if(k > 0){
@@ -92,27 +151,4 @@ String request(){
       }else{
         Serial.println("Key not found");
       }
-    }else{
-      Serial.println("Unexpected");
-    }
-    http.end();   //Close connection
-    Serial.println("HTTP END");
-    return ip;
-}
-// used_by: browser/post, loop()
-void ensure_connect(){
- if(WiFi.status() !=  WL_CONNECTED){
-  request();
- }
-}
-
-//used_by : browser/
-String my_ip(){
-  String ip;
-  if(WiFi.status() != WL_CONNECTED){
-      ip = request();
-  }else{
-    ip = IpAddress2String(WiFi.localIP());
-  }
-  return ip;
-}
+ */

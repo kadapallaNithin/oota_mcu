@@ -4,7 +4,27 @@
 #include <ESP8266WiFi.h>
 #include "browser.h" //get_full_cash(), SERVER_ADDRESS
 #include "main.h"// for STDERR and is_reset
-const byte  KEYLEN = 128;// wifi/request()
+//const byte  KEYLEN = 128;// wifi/request()
+
+/*
+ * 160 - 163 counter(4) unsigned long
+ * 167 - 168 user(2) unsigned short (0 - 65535] 0 - none //165,6 are reserved for user but not used
+ * 169 - 170 cpml(2)
+ * 
+ */
+#define SERVER_KEY_FROM   0   //128B
+#define SERVER_KEY_TO     127
+#define PASSWORD_FROM     128 //16B
+#define PASSWORD_TO       143
+#define SSID_FROM         144 //16B
+#define SSID_TO           159
+#define PRODUCT_KEY_FROM  256 //128B
+#define PRODUCT_KEY_TO    383
+/*
+ * 200 - 1224 cash_bytes not now
+ * 200 - 456 cash_bytes_not_now
+ * 384 - 649 cash_bytes (256)
+ */
 String fetch(int,int);
 void store(int,String);
 void store_dispensing_for(unsigned short int);

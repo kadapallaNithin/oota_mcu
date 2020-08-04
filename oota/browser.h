@@ -6,7 +6,7 @@
 #include "wifi.h"// for my_ip() in browse_with_ip_id_password()
 #include "dispense.h"
 //used_by : wifi/request()
-#define SERVER_ADDRESS String("http://skin-lime.000webhostapp.com/")//http://nithiniot.pythonanywhere.com/")//http://skin-lime.000webhostapp.com
+#define SERVER_ADDRESS String("http://nithiniot.pythonanywhere.com/")//http://nithiniot.pythonanywhere.com/")//http://skin-lime.000webhostapp.com
 //#define REDIRECT_LINK String("http://nithinkadapalla.pythonanywhere.com/") defined as INDEX_PAGE @ service.h
 extern HTTPClient http; //used_by: wifi/request()
 String browse_with_ip_id_password(String);//dispense/stop_dispense()

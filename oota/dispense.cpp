@@ -47,8 +47,7 @@ int dispense_water(int ml,int user){
   }
 }
 /*
- * used_by_not_now:service/service
- * may_be_in_future
+ * used_by:service/service
  *
  *
  */
@@ -86,10 +85,9 @@ void stop_dispense(int user,unsigned long count){
   dispensing_for = DF_NONE;
   dispensing = false;
   //renew_cash(
-  browse_with_ip_id_password("http://skin-lime.000webhostapp.com/api/finish.php?value="+String(count)+"&at="+String(millis())+"&user="+user);
+  browse_with_ip_id_password(SERVER_ADDRESS+"txn/finish/?value="+String(count)+"&at="+String(millis())+"&user="+user);//"http://skin-lime.000webhostapp.com/api/finish.php?value="+String(count)+"&at="+String(millis())+"&user="+user);
   //,count/count_per_ml);
-  
-  reset_counter_data();  
+  reset_counter_data();
 }
 /* 
  * uses:
