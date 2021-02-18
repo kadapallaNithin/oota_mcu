@@ -6,7 +6,7 @@
 #define STDOUT Serial
 #define STDLOG Serial
 //#include<arduinoJson.h>
-#define DEVICE_ID 1 //used_by : wifi/request()
+#define DEVICE_ID 3 //used_by : wifi/request()
 const bool is_reset = 1;
 extern volatile unsigned long counter;// = 0;//used_by:dispense/stop_dispense()
 extern unsigned long required_count;// = 0;//used_by:dispense/stop_dispense()

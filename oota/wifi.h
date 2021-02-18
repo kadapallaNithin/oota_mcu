@@ -12,6 +12,7 @@
 extern String ssid;//  = "kadapalla";//"NITAP-Boys Hostel";////"NITAP-Hostels";//"AndroidAP";//"Sathy@";//
 //used_by:serial/serial_config()
 extern String password;// = "12345678";// "nitap@campus@321";//"nitap@campus123";//"12345678nit";//"sathish@123";//
+extern String server_key;
 String WiFiConnect();
 String request(int);//used_by: setup
 void ensure_connect();//used_by: loop()

@@ -26,6 +26,7 @@ int dispense_water(int ml,int user){
 //      dispensing_for = df;
       stop_dispense(df,count0);
     }
+//          browse_with_ip_id();
       required_count = ml*count_per_ml;
       Serial.print("Required count set to ");
       Serial.print(required_count);
@@ -85,8 +86,9 @@ void stop_dispense(int user,unsigned long count){
   dispensing_for = DF_NONE;
   dispensing = false;
   //renew_cash(
-  browse_with_ip_id_password(SERVER_ADDRESS+"txn/finish/?value="+String(count)+"&at="+String(millis())+"&user="+user);//"http://skin-lime.000webhostapp.com/api/finish.php?value="+String(count)+"&at="+String(millis())+"&user="+user);
+  String new_key = browse_with_ip_id_password(SERVER_ADDRESS+"txn/finish/?value="+String(count)+"&at="+String(millis())+"&user="+user);//"http://skin-lime.000webhostapp.com/api/finish.php?value="+String(count)+"&at="+String(millis())+"&user="+user);
   //,count/count_per_ml);
+  store_product_key(new_key);
   reset_counter_data();
 }
 /* 
@@ -129,12 +131,6 @@ unsigned long stop_dispense(){
   reset_counter_data();
   return count;
 }*/
-/* 
- * uses:
- * counter,valve,LED_BUILTIN,required_count,dispensing_for,DF_NONE,dispensing,send_sensor_value_to(address),reset_counter_data()
- * used_by:
- * stop_dispense(user) 
- */
 unsigned long stop_dispense(){
     unsigned long count = counter;
     stop_dispense(dispensing_for,counter);
@@ -145,8 +141,8 @@ unsigned long stop_dispense(){
  * used  by:
  * dispense_water,service/service 
  */
-int stop_dispense(int user){
-  if(user == dispensing_for ){
+int stop_dispense(int txn){
+  if(txn == dispensing_for ){
     return stop_dispense();
   }
   return -1;

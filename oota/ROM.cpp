@@ -11,6 +11,7 @@
 #define MAX_MISMATCH 5
 unsigned int mismatch_count = 0;
 
+
 void store_count_per_ml(int cpml){
   EEPROM.begin(256);
   EEPROM.write(169,(cpml%(256*256))/256);
@@ -24,8 +25,8 @@ int count_per_ml_fetch(){
 }
 
 void store_product_key(String key){
-  EEPROM.begin(384);
-  for(int i=256; i<384; i++){
+  EEPROM.begin(PRODUCT_KEY_TO);
+  for(int i=PRODUCT_KEY_FROM; i<PRODUCT_KEY_TO; i++){
     EEPROM.write(i,key[i]);
   }
   EEPROM.commit();
@@ -153,12 +154,12 @@ bool cash_match(String cash){
 //  mismatch_count = 0;
   return true;
 }
-int rom_store(String api_key,String password , String ssid){
+int rom_store(String server_key,String password , String ssid){
 //  if(is_reset){
-    EEPROM.begin(512);
+    EEPROM.begin(1024);
     int addr;
-    for(addr = 0;addr < 128; addr++){
-      EEPROM.write(addr,api_key[addr]);
+    for(addr = SERVER_KEY_FROM;addr <= SERVER_KEY_TO; addr++){
+      EEPROM.write(addr,server_key[addr-SERVER_KEY_FROM]);
     }
   /*for(addr = 128; addr < 144 && addr < 128 + password.length(); addr++){// before it was addr < password.length()
     EEPROM.write(addr,password[addr]);
@@ -170,19 +171,20 @@ int rom_store(String api_key,String password , String ssid){
 //    }
 }
 String get_server_key(){
-//  if(is_reset){
-    EEPROM.begin(128);
+  if(is_reset){
+    EEPROM.begin(1024);
     String ke = "";
-    int addr = 0;
-    while(addr < 128){
+    int addr = SERVER_KEY_FROM;
+    while(addr <= SERVER_KEY_TO){
 //    if(addr != 51){
         ke += String((char)EEPROM.read(addr));
 //    }
       addr = addr + 1; 
     }
-    return ke;
-//  }
-//  return server_key;
+    server_key = ke;
+//    return ke;
+  }
+  return server_key;
 //  Serial.print("fetching api_key");
 //  return fetch(0,128);
 }
@@ -203,52 +205,3 @@ void renew_cash(String cash,int len){
     }
 }
 */
-/*
-void store_status(bool done){
-  if(done){
-    EEPROM.begin(512);
-    EEPROM.write(146,0);
-    EEPROM.commit();
-  }
-}
-byte fetch_status(){
-  EEPROM.begin(512);
-  return EEPROM.read(146);
-}*/
-
-
-
-/*
- * store_user, store_counter
- *//*void store_bytes(int addr,unsigned int count,int bytes){
-    byte b[4];
-    b[3] = count % 256;
-    b[2] = (count%(65536))/256;
-    if(bytes > 2){
-      b[0] = count/(16777216);
-      b[1] = (count%(16777216))/(65536);
-    }
-    EEPROM.begin(512);
-/  Serial.print(b0);
-  Serial.print(b1);
-  Serial.print(b2);
-  Serial.print(b3);
-  Serial.println(count);
-  
-    if(b0 > 127){
-      Serial.println();
-      Serial.print("Unexpected value ");
-      Serial.print(b0);
-      Serial.print(" for b0");
-    }else{/
-    for(int i = addr; i < addr+bytes; i++){
-      EEPROM.write(i,b[i]);//+128);
-      Serial.print("at ");
-      Serial.println(i);
-      Serial.println(b[i]);
-    }  /*EEPROM.write(147,b1);
-      EEPROM.write(148,b2);
-      EEPROM.write(149,b3);
-    //}/
-    EEPROM.commit();
-}*/

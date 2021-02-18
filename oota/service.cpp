@@ -1,34 +1,91 @@
+//Need to change 
+// in is_authenticated, ESPSESSIONID
 #include "service.h"
-// Current time
-unsigned long currentTime = millis();
-// Previous time
-unsigned long previousTime = currentTime; 
+#define DOC_SIZE 200
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 String header;// Variable to store the HTTP request //used_by:clent_refresh
+String product_key = "nithin";
+ESP8266WebServer server(80);
+#define NAV_BAR "<nav class='center blue'> OOTA </nav>"
+//Check if header is present and correct
+bool is_authenticated() {
+  if (server.hasHeader("Cookie")) {
+    String cookie = server.header("Cookie");
+    if (cookie.indexOf("ESPSESSIONID=1") != -1) {
+      Serial.println("Authentication Successful");
+      return true;
+    }
+  }
+  Serial.println("Authentication Failed");
+  return false;
+}
+void handleMyLogin(int x){
+  //not understood, may need to implement
+}
 
-//wifi/request()
-String server_key = "nithin";//3f82bff4c736d594b2f74e99939c015ff5d44a1e32679b0d33479b0984d5f83577d61c958a6703bcbcec3f706d6e3c17bac11e688a118cac6b54c2030e8ed6bc";
+//login page, also called for disconnect
+void handleLogin() {
+  String msg;
+  if (server.hasHeader("Cookie")) {
+    Serial.print("Found cookie: ");
+    String cookie = server.header("Cookie");
+    Serial.println(cookie);
+  }
+  if (server.hasArg("DISCONNECT")) {
+    Serial.println("Disconnection");
+    server.sendHeader("Location", "/login");
+    server.sendHeader("Cache-Control", "no-cache");
+    server.sendHeader("Set-Cookie", "ESPSESSIONID=0");
+    server.send(301);
+    return;
+  }
+  if (server.hasArg("USERNAME") && server.hasArg("PASSWORD")) {
+    if (server.arg("USERNAME") == "admin" &&  server.arg("PASSWORD") == "admin") {
+      server.sendHeader("Location", "/");
+      server.sendHeader("Cache-Control", "no-cache");
+      server.sendHeader("Set-Cookie", "ESPSESSIONID=1");
+      server.send(301);
+      Serial.println("Log in Successful");
+      return;
+    }
+    msg = "Wrong username/password! try again.";
+    Serial.println("Log in Failed");
+  }
+  String content = "<html><body><form action='/login' method='POST'>To log in, please use : admin/admin<br>";
+  content += "User:<input type='text' name='USERNAME' placeholder='user name'><br>";
+  content += "Password:<input type='password' name='PASSWORD' placeholder='password'><br>";
+  content += "<input type='submit' name='SUBMIT' value='Submit'></form>" + msg + "<br>";
+  content += "You also can go <a href='/inline'>here</a></body></html>";
+  server.send(200, "text/html", content);
+}
 
+void handleNotFound() {
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+  server.send(404, "text/pain", message);
+}
 
 /*
  *used_by:
  *client_print()
  */
-void client_wait(WiFiClient client,int sec,String curr_page,String next_page){//,float anim_dur
-    //client.print("<link href='/css/drop.css' rel='stylesheet' /></head><body onload='countDownDelay(delay);'><nav class='center'>Oota</nav><div class='row'><div class='col s3 offset-s1 card'>Automatically retry  <br/>after <b id='countdown'>0</b></div><div class='col s3 offset-s1 card'><div class='row'><div id='bottle'><div class='drop'></div></div></div></div><div class='col s2 offset-s1 orange card' onclick='retry()'>Retry Right Now</div></div><script>function countDownDelay(delay){var now = new Date().getTime();delay = delay + now;var x = setInterval(function(){var now = new Date().getTime();var distance = delay - now;var days = Math.floor(distance / (1000 * 60 * 60 * 24));var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById('countdown').innerHTML = days + 'd ' + hours + 'h '+ minutes + 'm ' + seconds + 's ';if(distance < 0){clearInterval(x);var hr = window.location.href;window.location.assign(hr.slice(0,hr.indexOf("+curr_page+"))+'"+next_page+"');}},1000);} delay="+sec+";</script></body></html>");
-    client.print(String("<style>\n#bottle{\nbackground:#3498DB;\nwidth:100%;\nmax-width:150px;\nheight:200px;\nborder-radius:15% ;\n}\ndiv {\n  margin: 17px auto;\n}\n\n.drop {\n  position: relative;\n  width: 10px;\n  height: 10px;\n  top: 0px;\n  margin: 0 auto;\n background: #fff;\n -moz-border-radius: 10px;\n -webkit-border-radius: 10px;\n  border-radius: 10px;\n  -moz-animation-name: drip;\n  -webkit-animation-name: drip;\n  animation-name: drip;\n  -moz-animation-timing-function: cubic-bezier(1,0,.91,.19);\n  -webkit-animation-timing-function: cubic-bezier(1,0,.91,.19);\n  animation-timing-function: cubic-bezier(1,0,.91,.19);\n  -moz-animation-duration: 0.9s;\n  -webkit-animation-duration: 0.9s;\n  animation-duration: ")+sec/10+"s;\n  -moz-animation-iteration-count: infinite;\n  -webkit-animation-iteration-count: infinite;\n  animation-iteration-count: infinite;\n}\n\n.drop:before {\n  content: "";\n  position: relative;/*absolute;*/\n  width: 0;\n height: 0;\n  border-left: 5px solid transparent;\n border-right: 5px solid transparent;\n  border-bottom: 30px solid rgba(255,255,255,1);\n  top: -40px;\n}\n\n@keyframes drip {\n    to {\n      top: 190px;\n    }\n}</style>");
-    client.print("</head><body onload='countDownDelay(delay);'><nav class='center'>Oota</nav><div class='row'><div class='col s3 offset-s1 card'>Automatically retry<input type='checkbox' id='automat'><br/> after <b id='countdown'>0</b></div><div class='col s3 offset-s1 card'><div class='row'><div id='bottle'><div class='drop'></div></div></div></div><div class='col s2 offset-s1 orange card' onclick='retry()'>Retry Right Now</div></div><script>\nfunction retry(){\nvar hr = window.location.href;window.location.assign(hr.replace(current_page,next_page));\n}\nfunction countDownDelay(delay){var now = new Date().getTime();delay = delay + now;var x = setInterval(function(){var now = new Date().getTime();var distance = delay - now;var days = Math.floor(distance / (1000 * 60 * 60 * 24));var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById('countdown').innerHTML = days + 'd ' + hours + 'h '+ minutes + 'm ' + seconds + 's ';if(distance < 0){clearInterval(x);if (document.getElementById('automat').checked === true){retry();}},1000);}\nnext_page = '/turn';current_page = '/turn';delay = 100000;//param = '';\n</script>\n");//slice(0,hr.indexOf(current_page))+
-    //  client.print(String("<link rel='stylesheet' href='http://kurthi.byethost5.com/css/drop.css' /><script src='http://kurthi.byethost5.com/js/countDown.js'></script></head><body onload='countDownDelay('countdown',")+3000000+");'><nav class='center'>Oota</nav><div class='row'><div class='col s3 offset-s1 card'>Automatically retry after <br/><b id='countdown'>0</b></div><div class='col s3 offset-s1 card'><div class='row'><div id='bottle'><div class='drop'></div></div></div></div><div class='col s2 offset-s1 orange card' onclick='retry()'>Retry Right Now</div></div><script>delay = 6000;</script></body></html>");
-}
-/*uses:
- * WAITING_TIME
- * used by:
- * client_print(),service()
- */
-void client_refresh(WiFiClient client,String page,String param){
-  client.print("<script>var hr = window.location.href;var x = setInterval(function(){window.location.assign(hr.slice(0,hr.indexOf('"+page+"'))+'/refresh"+param+");},"+WAITING_TIME+");</script>");
-  
+void client_wait(unsigned long sec,String curr_page,String next_page){//,float anim_dur
+    String message = "";
+    //message += "<link href='/css/drop.css' rel='stylesheet' /></head><body onload='countDownDelay(delay);'><nav class='center'>Oota</nav><div class='row'><div class='col s3 offset-s1 card'>Automatically retry  <br/>after <b id='countdown'>0</b></div><div class='col s3 offset-s1 card'><div class='row'><div id='bottle'><div class='drop'></div></div></div></div><div class='col s2 offset-s1 orange card' onclick='retry()'>Retry Right Now</div></div><script>function countDownDelay(delay){var now = new Date().getTime();delay = delay + now;var x = setInterval(function(){var now = new Date().getTime();var distance = delay - now;var days = Math.floor(distance / (1000 * 60 * 60 * 24));var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById('countdown').innerHTML = days + 'd ' + hours + 'h '+ minutes + 'm ' + seconds + 's ';if(distance < 0){clearInterval(x);var hr = window.location.href;window.location.assign(hr.slice(0,hr.indexOf("+curr_page+"))+'"+next_page+"');}},1000);} delay="+sec+";</script></body></html>";
+    message += String("<style>\n#bottle{\nbackground:#3498DB;\nwidth:100%;\nmax-width:150px;\nheight:200px;\nborder-radius:15% ;\n}\ndiv {\n  margin: 17px auto;\n}\n\n.drop {\n  position: relative;\n  width: 10px;\n  height: 10px;\n  top: 0px;\n  margin: 0 auto;\n background: #fff;\n -moz-border-radius: 10px;\n -webkit-border-radius: 10px;\n  border-radius: 10px;\n  -moz-animation-name: drip;\n  -webkit-animation-name: drip;\n  animation-name: drip;\n  -moz-animation-timing-function: cubic-bezier(1,0,.91,.19);\n  -webkit-animation-timing-function: cubic-bezier(1,0,.91,.19);\n  animation-timing-function: cubic-bezier(1,0,.91,.19);\n  -moz-animation-duration: 0.9s;\n  -webkit-animation-duration: 0.9s;\n  animation-duration: ")+sec/10+"s;\n  -moz-animation-iteration-count: infinite;\n  -webkit-animation-iteration-count: infinite;\n  animation-iteration-count: infinite;\n}\n\n.drop:before {\n  content: "";\n  position: relative;/*absolute;*/\n  width: 0;\n height: 0;\n  border-left: 5px solid transparent;\n border-right: 5px solid transparent;\n  border-bottom: 30px solid rgba(255,255,255,1);\n  top: -40px;\n}\n\n@keyframes drip {\n    to {\n      top: 190px;\n    }\n}</style>";
+    message += "</head><body onload='countDownDelay(delay);'><nav class='center'>Oota</nav><div class='row'><div class='col s3 offset-s1 card'>Automatically retry<input type='checkbox' id='automat'><br/> after <b id='countdown'>0</b></div><div class='col s3 offset-s1 card'><div class='row'><div id='bottle'><div class='drop'></div></div></div></div><div class='col s2 offset-s1 orange card' onclick='retry()'>Retry Right Now</div></div><script>\nfunction retry(){\nvar hr = window.location.href;window.location.assign(hr.replace(current_page,next_page));\n}\nfunction countDownDelay(delay){var now = new Date().getTime();delay = delay + now;var x = setInterval(function(){var now = new Date().getTime();var distance = delay - now;var days = Math.floor(distance / (1000 * 60 * 60 * 24));var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));var seconds = Math.floor((distance % (1000 * 60)) / 1000);document.getElementById('countdown').innerHTML = days + 'd ' + hours + 'h '+ minutes + 'm ' + seconds + 's ';if(distance < 0){clearInterval(x);if (document.getElementById('automat').checked === true){retry();}},1000);}\nnext_page = '/turn';current_page = '/turn';delay = 100000;//param = '';\n</script>\n";//slice(0,hr.indexOf(current_page))+
+    //  client.print(String("<link rel='stylesheet' href='http://kurthi.byethost5.com/css/drop.css' /><script src='http://kurthi.byethost5.com/js/countDown.js'></script></head><body onload='countDownDelay('countdown',")+3000000+");'><nav class='center'>Oota</nav><div class='row'><div class='col s3 offset-s1 card'>Automatically retry after <br/><b id='countdown'>0</b></div><div class='col s3 offset-s1 card'><div class='row'><div id='bottle'><div class='drop'></div></div></div></div><div class='col s2 offset-s1 orange card' onclick='retry()'>Retry Right Now</div></div><script>delay = 6000;</script></body></html>";
+  server.send(200,"text/html",message);
 }
 /*
  * uses:
@@ -36,171 +93,169 @@ void client_refresh(WiFiClient client,String page,String param){
  * used by:
  * service()
  */
-void client_print(WiFiClient client,bool json,int service,String response){
+void client_print(bool json,int service,StaticJsonDocument<DOC_SIZE> response,short step){
   if(json){
-    client.print(response);
+    String op;
+    serializeJson(response,op);
+    server.send(200,"application/json",op);
   }else{
-    client.print("<html><head><link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css'>");//<link href='https://raw.githubusercontent.com/kadapallaNithin/nitandhra/master/temp/drop.css' rel='stylesheet' /><script src='https://raw.githubusercontent.com/kadapallaNithin/nitandhra/master/temp/countDown.js'></script>
-    
+    String message = "<html><head><link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css'>";//<link href='https://raw.githubusercontent.com/kadapallaNithin/nitandhra/master/temp/drop.css' rel='stylesheet' /><script src='https://raw.githubusercontent.com/kadapallaNithin/nitandhra/master/temp/countDown.js'></script>
     if(service == SERVICE_TURN){
-      if(response.indexOf("{\"rem\":") >= 0){
-        client_wait(client,response.substring(7, response.length()-2 ).toInt(),"/turn?","/turn?");//,10
-      }else if(response.indexOf("{\"req\":")>= 0){
-        client.print("</head><body>");
-        //client_refresh(client,"/refresh","");
-        int ha = response.indexOf("has_dispensed_for\":")+19;
-        if(response.substring(ha,ha+2).toInt() == -2){
-          client.print("Sorry, Invalid credentials"); 
+      if(step == 3){//response.indexOf("{\"rem\":") >= 0
+        client_wait(response["rem"],"/turn?","/turn?");//,10,response.substring(7, response.length()-2 ).toInt()
+      }else if(step == 1){//response.indexOf("{\"req\":")>= 0
+        message += "</head><body>";
+      //client_refresh(client,"/refresh","");
+        //int ha = response.indexOf("has_dispensed_for\":")+19;
+        if(response["has_dispensed_for"] == "null" || response["has_dispensed_for"] == -2){//response.substring(ha,ha+2).toInt() == -2
+          message += "Sorry, Invalid credentials";
         }else{
-          //client.print(response[ha]);
-          client.print("<nav class='center'> OOTA </nav><div class='row' style='padding-top:10px'><div ><button class='btn col red offset-s8 s2'  onclick='f()'>Finish</button></div></div><script>function f(){window.location.assign(window.location.href.replace(\"turn\",\"finish\"));}</script>");
+          //message += response[ha]);
+          message += String(NAV_BAR)+"<div class='row' style='padding-top:10px'><div ><form action='/finish/'><input type='submit' value='finish' class='btn s2 offset-s8 red' /></form></div></div>";//doesn't work if not /turn<button class='btn col red offset-s8 s2'  onclick='f()'>Finish</button></div></div><script>function f(){window.location.assign(window.location.href.replace(\"turn\",\"finish\"));}</script>";//<a class='btn col red offset-s8 s2' href='"+SERVER_ADDRESS+"dispense/"+response["txn"].as<String>()+"/' >";
         }
-      }else if(response.indexOf("{\"error\":") >= 0){
-        client.print("</head><body>");
-        client.print(response.substring(1,response.length()-1));
-      }else{
-        client.print("</head><body>");
-        client.print("Error please show this screenshot to admin service/client_print.TURN");
+      }else if(step == 2){//response.indexOf("{\"error\":") >= 0
+        message += "</head><body>";
+        message += "<strong>Error : </strong>Invalid Parameters";//response.substring(1,response.length()-1);
       }
     }else if(service == SERVICE_FINISH){
-      client.print("</head><body>");
-      client.print("<script>alert('");
-      if(response[10] == '-'){
-        client.print("Already finished!");//"You can finish only your task");
+      message += "</head><body>";
+      message +="<script>alert('";
+      if(step == 1){
+        if(response["finish"] == -1){
+          message +="Already finished!";//"You can finish only your task");
+        }else{
+          message +=String("Dispensed ")+response["finish"].as<int>()/count_per_ml+" ml of water. Thanks for using our service";//.substring(10, response.length()-2 ).toInt()
+        }
       }else{
-        client.print(String("Dispensed ")+response.substring(10, response.length()-2 ).toInt()/count_per_ml+" ml of water. Thanks for using our service");
+        message += "Error has occured! ";
       }
-      client.print(String("');window.location.assign('")+INDEX_PAGE+"');</script>");//window.close();
+      message += String("');window.location.assign('")+INDEX_PAGE+"');</script>";//window.close();
     }
-    client.print("</body></html>");
+    message += "</body></html>";
+    server.send(200,"text/html",message);
   }
 }
-/*
- * uses:
- * currentTime,previousTime,timeoutTime,header,Serial,required_count,counter,FREQUENT_MES_DELAY,SEVICE_TURN,server_key,count_per_ml
- * refresh_client(),store_count_per_ml(),,dispense_water(req,user),client_print()
- * used by:
- * clie.../loop
- */
-void service(WiFiClient client){
-    Serial.println("New Client.");          // print a message out in the serial port
-    String currentLine = "";                // make a String to hold incoming data from the client
-    currentTime = millis();
-    previousTime = currentTime;
-    while (client.connected() && currentTime - previousTime <= timeoutTime) { // loop while the client's connected
-      currentTime = millis();         
-      if (client.available()) {             // if there's bytes to read from the client,
-        char c = client.read();             // read a byte, then
-        Serial.print(c);                    // print it out the serial monitor
-        header += c;
-        if (c == '\n') {                    // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
-          if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println("Connection: close");
-            client.println();
-            Serial.println(header);
-            Serial.println("GET /turn?key="+server_key);
-            int wait_time = required_count - counter;
-            if(frequent()){
-              wait_time += FREQUENT_MES_DELAY;
-            }
-            int json_ind = header.indexOf("&json=");//json_ind is used below @ cash_bytes
-            bool json = (json_ind != -1)&&(header[json_ind+6] == '1');
-            if(header.indexOf("GET /refresh") >= 0){
-              client_refresh(client,"/refresh",header.substring(header.indexOf("GET /refresh")+12));
-            }else if(header.indexOf("GET /status") >= 0){
-              Serial.println(wait_time);
-              client.println(wait_time);
-              //client.println("Accept you");
-            }else if(header.indexOf("GET /turn?key="+server_key) >= 0){
-              if(wait_time <= 0){
-                int r = header.indexOf("&req=");
-                int u = header.indexOf("&user=");
-                int c = header.indexOf("&cash_bytes=");
-                if(r > 0 && u > 0 && c > 0){
-                  long req = header.substring(r+5,u).toInt();
-                  long user = header.substring(u+6,c).toInt();
-                  String cash;
-                  if(json){
-                    cash = header.substring(c+12,json_ind);
-                  }else{
-                    cash = header.substring(c+12);
-                    cash = cash.substring(0,req);
-                  }
-                  /*if(req == 0 || user == 0 || cash == "" || req != cash.length()){
-                    //STDOUT.print(String("Cash ")+header.substring(json_ind+6)+"is "+cash);
-                    Serial.print("n");
-                    Serial.print(json_ind+6);
-                    Serial.print(header.substring(header[header.length()-1]));
-                    client_print(client,json,SERVICE_TURN,"{\"error\":\"Parameters are not as expected\"}");//i.e req,user,cash_bytes,json(optional)
-                  }else{*/
-                    //Serial.println("Accepted ");
-                    client_print(client,json,SERVICE_TURN,String("{\"req\":")+req+",\"user\":"+user+",\"has_dispensed_for\":"+dispense_water(req,user)+"}");//,cash
-/*                  client.print("{\"req\":");
-                  client.print(req);
-                  client.print(",\"user\":");
-                  client.print(user);
-                  client.print(",\"has_dispensed_for\":"+String(dispense_water(req,user)));
-                  client.print("}");*/
-                  //}
-                }else{
-                  client_print(client,json,SERVICE_TURN,"{\"error\":\"Invalid Parameters\"}");
-//                  client.println("-1");
-                }
-              }else{
-                client_print(client,json,SERVICE_TURN,String("{\"rem\":")+wait_time+"}");
-//                client.print("{\"rem\":");
-//                client.print(wait_time);
-                //client.print("}");
-              }
-              //refresh_client("/turn?","?key="+);
-            }else if(header.indexOf("GET /finish?key="+server_key) >= 0){
-                int u = header.indexOf("&user=");
-                if(u > 0){
-                  long user = header.substring(u+6).toInt();
-                  client_print(client,json,SERVICE_FINISH,String("{\"finish\":")+stop_dispense(user)+"}");
-//                  client.print("{\"finish\":");
-//                  client.print(stop_dispense(user));
-//                  client.print("}");
-                }
-            }else if(header.indexOf("GET /cpml?key="+server_key) >= 0){
-                int c = header.indexOf("&cpml=");
-                if(c > 0){
-                  long cpml = header.substring(c+6).toInt();
-                  client.print(cpml);
-                  store_count_per_ml(cpml);
-                  client.println(count_per_ml);
-                  count_per_ml = cpml;
-                  client.print(count_per_ml_fetch());
-                }
-            }else{
-              client.println("-1");//Brute force hacker :<");
-              //while(1)
-              //  client.println(".");
-            }
-            header = "";
-            client.stop();
-            // Break out of the while loop
-            break;
-          } else { // if you got a newline, then clear currentLine
-            currentLine = "";
-          }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
-        }
+//uses:server,product_key,required_count,counter,
+void handleTurn(){
+  bool json = false;
+  StaticJsonDocument<DOC_SIZE> doc;
+  if(server.args()==5 && server.argName(4)=="json"){
+    json = true;
+  }
+  if(required_count - counter <= 0){
+    if(server.argName(0) == "key" && server.arg(0)==product_key && server.argName(1)=="req" && server.argName(2) == "txn" && server.argName(3)=="cash"){
+      doc["req"] = server.arg(1);
+      doc["txn"] = server.arg(2);
+      doc["has_dispensed_for"] = dispense_water(server.arg(1).toInt(),server.arg(2).toInt());
+      handleMyLogin(1);
+//      client_print(json,SERVICE_TURN,doc,1);
+      //client_print(,SERVICE_TURN,String("{\"req\":")++",\"user\":"++",\"has_dispensed_for\":"++"}");//,cash
+    }else{
+      String message = "";
+      Serial.println(product_key);
+      for(int i=0; i<server.args(); i++){
+         Serial.print(server.argName(i));
+         Serial.println(server.arg(i));
       }
+      doc["error"]= "Invalid Parameters";
+      client_print(json,SERVICE_TURN,doc,2);
     }
-    // Clear the header variable
-    header = "";
-    client.stop();
-    //  ssid = "kadapalla";
-    //Serial.println(ssid);
-    //WiFi.begin(ssid,password);
-    STDLOG.println("Client disconnected.");
-    STDLOG.println("");
+  }else{
+    doc["rem"] = required_count - counter;
+    client_print(json,SERVICE_TURN,doc,3);
+  }
+}
+
+void handleWatch(){
+  StaticJsonDocument<DOC_SIZE> doc;
+  handleMyLogin(0);
+  client_print(false,SERVICE_TURN,doc,1);
+}
+void handleCpml(){
+  String message = "";
+  if(server.args()>1 && server.argName(0) == "key" && server.arg(0) == product_key && server.argName(1) == "cpml"){
+    message += server.arg(1).toInt();
+    store_count_per_ml(server.arg(1).toInt());
+    message += count_per_ml;
+    count_per_ml = server.arg(1).toInt();
+    message += count_per_ml_fetch();
+  }
+}
+//uses:server,WAITING_TIME
+//used_by:server_begin()
+void handleRefresh(){
+  String message = "";
+  if (server.method() != HTTP_POST) {
+    server.send(405, "text/plain", "Method Not Allowed");
+  } else {
+  /*    String message = "POST form was:\n";
+    for (uint8_t i = 0; i < server.args(); i++) {
+      message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    }*/
+    //hr.slice(0,hr.indexOf('"+page+"'))+
+    String param = "";//not implemented it is assumed to be post request but following is get change to post accordingly.
+    message = "<script>var hr = window.location.href;var x = setInterval(function(){window.location.assign('/refresh"+param+");},"+WAITING_TIME+");</script>";
+    server.send(200, "text/html", message);
+  }
+}
+//uses:server,required_count,counter
+void handleStatus(){
+  server.send(200,"text/plain",String(required_count - counter));
+}
+void handleFinish(){
+  Serial.println("finish");
+  if (!is_authenticated()) {
+    server.sendHeader("Location", "http://192.168.43.91:8000/");
+    server.sendHeader("Cache-Control", "no-cache");
+//    server.send(301);
+//    return;
+  }
+  bool json = false;
+  if(server.args() > 2){
+    json = server.arg(2);
+  }
+  StaticJsonDocument<DOC_SIZE> doc;
+  if(server.args() > 1 && server.argName(0)=="key" && server.arg(0) == product_key && server.argName(1)=="txn"){
+    Serial.println("finish_doc");
+    doc["finish"] = stop_dispense(server.arg(1).toInt());
+    client_print(json,SERVICE_FINISH,doc,1);
+  }else{
+    client_print(json,SERVICE_FINISH,doc,2);
+  }
+}
+
+void handleRoot() {
+  Serial.println("Enter handleRoot");
+  String header;
+  if (!is_authenticated()) {
+    server.sendHeader("Location", "/login");
+    server.sendHeader("Cache-Control", "no-cache");
+    server.send(301);
+    return;
+  }
+  String content = "<html><body><H2>hello, you successfully connected to esp8266!</H2><br>";
+  if (server.hasHeader("User-Agent")) {
+    content += "the user agent used is : " + server.header("User-Agent") + "<br><br>";
+  }
+  content += "You can access this page until you <a href=\"/login?DISCONNECT=YES\">disconnect</a></body></html>";
+  server.send(200, "text/html", content);
+}
+
+//wait time for attacks, disconnection after a time period are to be considered!
+void server_begin(){
+  ensure_connect();
+  server.on("/login",handleLogin);
+  server.on("/",handleRoot);
+  server.on("/turn/",handleTurn);
+  server.on("/watch/",handleWatch);
+  server.on("/finish/",handleFinish);
+  server.on("/cpml/",handleCpml);
+  server.on("/status/",handleStatus);
+  server.on("/refresh/",handleRefresh);
+  server.onNotFound(handleNotFound);
+  
+  const char * headerkeys[] = {"User-Agent", "Cookie"} ;
+  size_t headerkeyssize = sizeof(headerkeys) / sizeof(char*);
+  server.collectHeaders(headerkeys, headerkeyssize);
+  server.begin();
 }
